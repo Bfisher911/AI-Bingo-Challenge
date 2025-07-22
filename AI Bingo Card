@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Class Bingo Challenge</title>
+    
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Libraries for PDF/Image Export (loaded deferred) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoVBL5gI9kLmbG0CsdC3EokL/OrxnA==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" xintegrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+
+    <style>
+        /* --- Base & Variables --- */
+        :root {
+            --bg-dark: #0E1116;
+            --bg-light: #1C2128;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #7d8590;
+            --accent-color: #1E66F5;
+            --accent-hover: #388bfd;
+            --success-color: #3BA55D;
+            --warning-color: #F39C12;
+            --done-bg: #2d482e;
+            --done-border: var(--success-color);
+            --font-family: 'Inter', sans-serif;
+        }
+
+        /* --- High Contrast Theme --- */
+        .high-contrast {
+            --bg-dark: #000000;
+            --bg-light: #1a1a1a;
+            --border-color: #ffffff;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --accent-color: #00ffff;
+            --accent-hover: #8effff;
+            --success-color: #00ff00;
+            --warning-color: #ffff00;
+            --done-bg: #003300;
+            --done-border: var(--success-color);
+        }
+
+        /* --- General Styles --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            font-family: var(--font-family);
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* --- Header & Controls --- */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            font-family: var(--font-family);
+            background-color: var(--bg-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: #272c34;
+            border-color: var(--text-secondary);
+        }
+        
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: #fff;
+        }
+        
+        .btn-success:hover:not(:disabled) {
+            background-color: #4cd16f;
+            border-color: #4cd16f;
+        }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        /* --- Progress Bar --- */
+        .progress-container {
+            margin-bottom: 1.5rem;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: var(--bg-light);
+            border-radius: 8px;
+            overflow: hidden;
+            height: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0;
+            background-color: var(--accent-color);
+            border-radius: 8px 0 0 8px;
+            transition: width 0.3s ease-in-out;
+            text-align: center;
+            font-size: 0.8rem;
+            line-height: 20px;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* --- Bingo Grid --- */
+        #bingo-grid-container {
+            padding: 1rem;
+            background-color: var(--bg-light);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+        }
+
+        .bingo-cell {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+        }
+
+        .bingo-cell:hover, .bingo-cell:focus {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-color: var(--accent-color);
+            outline: none;
+        }
+        
+        .bingo-cell-content {
+            padding-bottom: 20px; /* Space for hint icon */
+        }
+
+        .hint-icon {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .hint-icon:hover {
+            opacity: 1;
+        }
+
+        .bingo-cell.done {
+            background-color: var(--done-bg);
+            border-color: var(--done-border);
+            color: var(--text-primary);
+        }
+        
+        .bingo-cell.done::after {
+            content: '✔';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 1.5rem;
+            color: var(--success-color);
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        
+        .bingo-cell.bingo-win {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 255, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0); }
+        }
+
+        /* --- Modals --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-light);
+            margin: auto;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            width: 90%;
+            max-width: 600px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .modal-close {
+            color: var(--text-secondary);
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: var(--accent-color);
+        }
+        
+        .modal p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        
+        #hint-tool-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        #hint-tool-list li {
+            margin-bottom: 0.75rem;
+        }
+
+        #hint-tool-list a {
+            color: var(--accent-hover);
+            text-decoration: none;
+            background-color: var(--bg-dark);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            display: block;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+        
+        #hint-tool-list a:hover {
+            background-color: #272c34;
+        }
+
+
+        textarea, input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin-bottom: 1rem;
+            resize: vertical;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .checkbox-container input {
+            margin-right: 0.75rem;
+            width: 1.2rem;
+            height: 1.2rem;
+        }
+
+        /* --- Accessibility --- */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
+        /* --- Responsive Design --- */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5rem; }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .bingo-grid {
+                grid-template-columns: repeat(3, 1fr); /* Adjust for smaller screens */
+                gap: 0.5rem;
+            }
+            .bingo-cell {
+                font-size: 0.7rem;
+                padding: 0.25rem;
+            }
+            .bingo-cell-content {
+                padding-bottom: 15px;
+            }
+            .hint-icon {
+                font-size: 1rem;
+            }
+            .bingo-cell.done::after {
+                font-size: 1rem;
+                top: 4px;
+                right: 4px;
+            }
+            .controls {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="">
+    <div class="container">
+        <header class="header">
+            <div>
+                <h1>AI Class Bingo Challenge</h1>
+                <p style="color: var(--text-secondary);">Complete a line to win!</p>
+            </div>
+            <div class="theme-toggle" id="theme-toggle" role="switch" aria-checked="false" tabindex="0">
+                <span aria-hidden="true">☀️</span>
+                <span class="sr-only">Toggle High Contrast Mode</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <button id="shuffle-btn" class="btn">Shuffle Card (3 left)</button>
+            <button id="freeze-btn" class="btn">Lock Card</button>
+            <button id="export-btn" class="btn">Export/Import</button>
+            <button id="claim-bingo-btn" class="btn btn-success" disabled>Claim Bingo!</button>
+            <button id="help-btn" class="btn">Help</button>
+        </div>
+
+        <div class="progress-container">
+            <p id="progress-text" style="text-align: center; margin-bottom: 0.5rem; font-weight: 500;">Progress: 0/25</p>
+            <div class="progress-bar">
+                <div id="progress-bar-fill" class="progress-bar-fill"></div>
+            </div>
+        </div>
+
+        <div id="bingo-grid-container">
+            <div id="bingo-grid" class="bingo-grid" role="grid">
+                <!-- Bingo cells will be generated here by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- ARIA Live Region for screen reader announcements -->
+        <div id="aria-announcer" class="sr-only" aria-live="polite"></div>
+
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="modal-close-btn">&times;</span>
+            <h2 id="modal-title">Task Title</h2>
+            <p><strong>Proof Required:</strong> <span id="modal-proof"></span></p>
+            <label for="modal-notes">Notes / Proof Link:</label>
+            <textarea id="modal-notes" rows="4" placeholder="e.g., Paste your URL here, or write a brief note about your process."></textarea>
+            <div class="checkbox-container">
+                <input type="checkbox" id="modal-done-checkbox">
+                <label for="modal-done-checkbox">Mark as Done</label>
+            </div>
+            <button id="modal-save-btn" class="btn btn-primary">Save and Close</button>
+        </div>
+    </div>
+
+    <!-- Claim Bingo Modal -->
+    <div id="claim-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="claim-modal-close-btn">&times;</span>
+            <h2>Congratulations! You got Bingo!</h2>
+            <p>Please enter your details to generate your submission proof.</p>
+            <label for="claim-name">Name / Team Name:</label>
+            <input type="text" id="claim-name" required>
+            <label for="claim-email">Email (Optional):</label>
+            <input type="email" id="claim-email">
+            <p style="font-size: 0.9rem; margin-top: 1rem;">A PDF/PNG proof sheet will be generated for you to download. You can submit it at: <a href="https://example.com/submit" target="_blank" style="color: var(--accent-hover);">[SUBMIT_URL]</a></p>
+            <button id="generate-proof-btn" class="btn btn-success">Generate & Download Proof</button>
+        </div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="help-modal-close-btn">&times;</span>
+            <h2>How to Play</h2>
+            <ol style="padding-left: 20px;">
+                <li style="margin-bottom: 0.5rem;"><strong>Shuffle:</strong> Start with a random card. You can shuffle up to 3 times to get a new set of tasks. Shuffling will reset your card and progress.</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Lock Card:</strong> Once you're happy with your card, lock it in. You can't shuffle after locking.</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Complete Tasks:</strong> Click on a square to see the task details. Add your notes or a link to your proof (e.g., a screenshot).</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Hints:</strong> Click the 💡 icon on any square to get a list of suggested AI tools for that task.</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Mark as Done:</strong> Check the "Mark as Done" box in the popup to mark a square. Your progress is saved automatically in your browser.</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Get Bingo:</strong> Complete any 5 squares in a row, column, or diagonal. The winning line will light up.</li>
+                <li style="margin-bottom: 0.5rem;"><strong>Claim Bingo:</strong> Once you have a Bingo, the "Claim Bingo" button will activate. Click it to generate a PDF/PNG proof sheet with your name, a timestamp, and all your notes.</li>
+            </ol>
+        </div>
+    </div>
+    
+    <!-- Export Modal -->
+    <div id="export-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="export-modal-close-btn">&times;</span>
+            <h2>Export / Import</h2>
+            <p>Save your progress or generate a proof sheet.</p>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <button id="export-json-btn" class="btn">Download Save File (JSON)</button>
+                <button id="import-json-btn" class="btn">Load Save File (JSON)</button>
+                <input type="file" id="json-file-input" class="sr-only" accept=".json">
+                <hr style="border-color: var(--border-color);">
+                <button id="export-png-btn" class="btn">Download Proof Sheet (PNG)</button>
+                <button id="export-pdf-btn" class="btn">Download Proof Sheet (PDF)</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hint Modal -->
+    <div id="hint-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="hint-modal-close-btn">&times;</span>
+            <h2 id="hint-title">Tool Suggestions</h2>
+            <p id="hint-task-title" style="font-weight: bold; font-style: normal;"></p>
+            <ul id="hint-tool-list">
+                <!-- Tool links will be injected here -->
+            </ul>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DATA POOL with TOOL HINTS ---
+        const TASK_POOL = [
+          { "id": 1,  "title": "Use a Google model (Veo, Imagen, Flow, Vids, Whisk)", "proof": "Screenshot showing the model interface or API call.", "tools": [{ "name": "Google AI Studio", "url": "https://aistudio.google.com/" }, { "name": "Vertex AI", "url": "https://cloud.google.com/vertex-ai" }] },
+          { "id": 2,  "title": "Generate accurate text inside an image", "proof": "Exported image + prompt; highlight the correct text.", "tools": [{ "name": "Ideogram", "url": "https://ideogram.ai/" }, { "name": "DALL-E 3 (via Copilot)", "url": "https://copilot.microsoft.com/" }, { "name": "Midjourney", "url": "https://www.midjourney.com/" }] },
+          { "id": 3,  "title": "Create a talking avatar", "proof": "Short clip of the avatar speaking.", "tools": [{ "name": "HeyGen", "url": "https://www.heygen.com/" }, { "name": "Synthesia", "url": "https://www.synthesia.io/" }, { "name": "D-ID", "url": "https://www.d-id.com/" }] },
+          { "id": 4,  "title": "Auto-generate subtitles and fix 3 errors", "proof": "Screenshot of timeline/caption editor.", "tools": [{ "name": "Descript", "url": "https://www.descript.com/" }, { "name": "Adobe Premiere Pro", "url": "https://www.adobe.com/products/premiere.html" }, { "name": "CapCut", "url": "https://www.capcut.com/" }] },
+          { "id": 5,  "title": "Export a vertical 9:16 clip", "proof": "Exported video screenshot showing 9:16 resolution.", "tools": [{ "name": "CapCut", "url": "https://www.capcut.com/" }, { "name": "Adobe Premiere Rush", "url": "https://www.adobe.com/products/premiere-rush.html" }, { "name": "Canva", "url": "https://www.canva.com/" }] },
+          { "id": 6,  "title": "Use a credit-based tool & check remaining credits", "proof": "Screenshot of credit counter.", "tools": [{ "name": "Midjourney", "url": "https://www.midjourney.com/" }, { "name": "ElevenLabs", "url": "https://elevenlabs.io/" }, { "name": "HeyGen", "url": "https://www.heygen.com/" }] },
+          { "id": 7,  "title": "Chain 3+ tools for one asset", "proof": "Flow note in card + files from each step.", "tools": [{ "name": "Workflow Idea 1", "url": "https://www.notion.so/help/guides/how-to-use-notion-ai", "description": "ChatGPT (script) -> ElevenLabs (voice) -> Runway (video)" }, { "name": "Workflow Idea 2", "url": "https://www.notion.so/help/guides/how-to-use-notion-ai", "description": "Midjourney (image) -> LeiaPix (animate) -> CapCut (edit)" }] },
+          { "id": 8,  "title": "Apply a style transfer", "proof": "Before/after images or clip.", "tools": [{ "name": "RunwayML", "url": "https://runwayml.com/" }, { "name": "Artbreeder", "url": "https://www.artbreeder.com/" }, { "name": "DeepArt.io", "url": "https://deepart.io/" }] },
+          { "id": 9,  "title": "Upscale to 4K", "proof": "Export settings screenshot or file properties.", "tools": [{ "name": "Topaz Video AI", "url": "https://www.topazlabs.com/topaz-video-ai" }, { "name": "HitPaw Video Enhancer", "url": "https://www.hitpaw.com/video-enhancer.html" }] },
+          { "id": 10, "title": "Add a content warning / ethical disclaimer", "proof": "Final video frame or slide screenshot.", "tools": [{ "name": "Canva", "url": "https://www.canva.com/" }, { "name": "Any Video Editor", "url": "https://www.adobe.com/products/premiere.html" }] },
+          { "id": 11, "title": "Use voice cloning/overdub", "proof": "Short audio/video clip + tool UI screenshot.", "tools": [{ "name": "ElevenLabs", "url": "https://elevenlabs.io/" }, { "name": "Descript (Overdub)", "url": "https://www.descript.com/overdub" }, { "name": "Resemble.AI", "url": "https://www.resemble.ai/" }] },
+          { "id": 12, "title": "Use a beta/experimental feature", "proof": "Screenshot indicating beta flag.", "tools": [{ "name": "Check for 'Beta' or 'Labs' sections in your favorite tools.", "url": "https://labs.openai.com/" }] },
+          { "id": 13, "title": "Add AI-generated music or SFX", "proof": "Audio clip credit + export screenshot.", "tools": [{ "name": "Suno", "url": "https://www.suno.ai/" }, { "name": "AIVA", "url": "https://www.aiva.ai/" }, { "name": "ElevenLabs (SFX)", "url": "https://elevenlabs.io/" }] },
+          { "id": 14, "title": "Collaborate (swap an asset with another team)", "proof": "Note which team + shared asset screenshot.", "tools": [{ "name": "Canva for Teams", "url": "https://www.canva.com/for-teams/" }, { "name": "Google Drive", "url": "https://www.google.com/drive/" }, { "name": "Frame.io", "url": "https://frame.io/" }] },
+          { "id": 15, "title": "Log timestamps & prompts for one tool", "proof": "Copy/paste text in notes field.", "tools": [{ "name": "Notion", "url": "https://www.notion.so/" }, { "name": "Google Docs", "url": "https://docs.google.com/" }, { "name": "A tool's built-in History tab", "url": "https://www.midjourney.com/app/" }] },
+          { "id": 16, "title": "Export a GIF from video", "proof": "Attach GIF file or link.", "tools": [{ "name": "Canva", "url": "https://www.canva.com/" }, { "name": "Ezgif.com", "url": "https://ezgif.com/video-to-gif" }, { "name": "Adobe Express", "url": "https://www.adobe.com/express/feature/video/convert/video-to-gif" }] },
+          { "id": 17, "title": "Use a canvas-based editor (Canva, Google Vids)", "proof": "Screenshot of editor UI.", "tools": [{ "name": "Canva", "url": "https://www.canva.com/" }, { "name": "Google Vids", "url": "https://vids.google/" }, { "name": "RunwayML", "url": "https://runwayml.com/" }] },
+          { "id": 18, "title": "Create a 3D camera move/parallax from still", "proof": "Short clip showing motion.", "tools": [{ "name": "LeiaPix Converter", "url": "https://convert.leiapix.com/" }, { "name": "Runway Gen-2", "url": "https://runwayml.com/" }, { "name": "CapCut (3D Style)", "url": "https://www.capcut.com/" }] },
+          { "id": 19, "title": "Use an API or prompt template", "proof": "Code snippet or template screenshot.", "tools": [{ "name": "OpenAI API", "url": "https://platform.openai.com/docs" }, { "name": "Hugging Face", "url": "https://huggingface.co/" }, { "name": "PromptBase", "url": "https://promptbase.com/" }] },
+          { "id": 20, "title": "Produce subtitles in two languages", "proof": "Screenshot of both language tracks.", "tools": [{ "name": "Descript", "url": "https://www.descript.com/" }, { "name": "Veed.io", "url": "https://www.veed.io/tools/video-translator" }] },
+          { "id": 21, "title": "Credit all sources/tools on final slate", "proof": "Final frame screenshot.", "tools": [{ "name": "Canva", "url": "https://www.canva.com/" }, { "name": "Adobe Express", "url": "https://www.adobe.com/express/" }] },
+          { "id": 22, "title": "Fix a hallucination/bias issue", "proof": "Explain issue + corrected output.", "tools": [{ "name": "Google Search (Fact-checking)", "url": "https://google.com" }, { "name": "Photoshop (Manual image edit)", "url": "https://www.adobe.com/products/photoshop.html" }] },
+          { "id": 23, "title": "Document a tool’s cost model", "proof": "Screenshot or typed summary in notes.", "tools": [{ "name": "Check the 'Pricing' page of any AI tool's website.", "url": "https://openai.com/pricing" }] },
+          { "id": 24, "title": "Capture a glitch/blooper reel", "proof": "Short clip or GIF of glitch.", "tools": [{ "name": "CapCut", "url": "https://www.capcut.com/" }, { "name": "Adobe Premiere Pro", "url": "https://www.adobe.com/products/premiere.html" }] },
+          { "id": 25, "title": "Add a QR code to BTS doc", "proof": "Final video frame or QR screenshot.", "tools": [{ "name": "Canva (QR Code App)", "url": "https://www.canva.com/apps/qr-code" }, { "name": "Adobe Express", "url": "https://www.adobe.com/express/feature/image/qr-code-generator" }] },
+          { "id": 26, "title": "Use Runway’s Motion Brush (or similar)", "proof": "Clip/UI screenshot showing brush path.", "tools": [{ "name": "Runway Gen-2", "url": "https://runwayml.com/" }, { "name": "Pika Labs", "url": "https://pika.art/" }] },
+          { "id": 27, "title": "Remove a background / greenscreen replace", "proof": "Before/after or timeline screenshot.", "tools": [{ "name": "RunwayML", "url": "https://runwayml.com/" }, { "name": "CapCut", "url": "https://www.capcut.com/" }, { "name": "Unscreen", "url": "https://www.unscreen.com/" }] },
+          { "id": 28, "title": "Edit via text timeline (e.g., Descript)", "proof": "Screenshot of text-based edit UI.", "tools": [{ "name": "Descript", "url": "https://www.descript.com/" }, { "name": "Adobe Premiere Pro (Text-Based Editing)", "url": "https://helpx.adobe.com/premiere-pro/using/text-based-editing.html" }] },
+          { "id": 29, "title": "Make a seamless looping animation", "proof": "GIF or video loop proof.", "tools": [{ "name": "RunwayML", "url": "https://runwayml.com/" }, { "name": "Pika Labs", "url": "https://pika.art/" }, { "name": "Canva", "url": "https://www.canva.com/" }] },
+          { "id": 30, "title": "Create a before/after split-screen transform", "proof": "Split-screen frame or editor screenshot.", "tools": [{ "name": "CapCut", "url": "https://www.capcut.com/" }, { "name": "Canva", "url": "https://www.canva.com/" }, { "name": "Adobe Premiere Pro", "url": "https://www.adobe.com/products/premiere.html" }] }
+        ];
+
+        // --- DOM Elements ---
+        const grid = document.getElementById('bingo-grid');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const freezeBtn = document.getElementById('freeze-btn');
+        const claimBingoBtn = document.getElementById('claim-bingo-btn');
+        const helpBtn = document.getElementById('help-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const announcer = document.getElementById('aria-announcer');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        // Modals
+        const taskModal = document.getElementById('task-modal');
+        const claimModal = document.getElementById('claim-modal');
+        const helpModal = document.getElementById('help-modal');
+        const exportModal = document.getElementById('export-modal');
+        const hintModal = document.getElementById('hint-modal');
+        
+        // --- State Management ---
+        let state = {
+            board: [],
+            shufflesLeft: 3,
+            isFrozen: false,
+            hasBingo: false,
+        };
+
+        // --- Local Storage ---
+        const saveState = () => {
+            localStorage.setItem('aiBingoState', JSON.stringify(state));
+        };
+
+        const loadState = () => {
+            const savedState = localStorage.getItem('aiBingoState');
+            if (savedState) {
+                state = JSON.parse(savedState);
+                // Ensure loaded state has the new 'tools' property
+                if (state.board && state.board.length > 0 && !state.board[0].tools) {
+                    console.log("Old state detected, re-generating board to include tools.");
+                    return false; // Force re-generation
+                }
+                return true;
+            }
+            return false;
+        };
+
+        // --- Core Functions ---
+        const generateNewBoard = () => {
+            const shuffled = [...TASK_POOL].sort(() => 0.5 - Math.random());
+            const newBoard = shuffled.slice(0, 25).map(task => ({
+                ...task,
+                done: false,
+                notes: ''
+            }));
+            state.board = newBoard;
+        };
+        
+        const renderGrid = () => {
+            grid.innerHTML = '';
+            state.board.forEach((cellData, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'bingo-cell';
+                cell.setAttribute('role', 'button');
+                cell.setAttribute('tabindex', '0');
+                cell.dataset.index = index;
+                
+                const content = document.createElement('div');
+                content.className = 'bingo-cell-content';
+                content.textContent = cellData.title;
+                cell.appendChild(content);
+
+                const hintIcon = document.createElement('div');
+                hintIcon.className = 'hint-icon';
+                hintIcon.textContent = '💡';
+                hintIcon.setAttribute('role', 'button');
+                hintIcon.setAttribute('aria-label', `Get hints for ${cellData.title}`);
+                hintIcon.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent opening the main task modal
+                    openHintModal(index);
+                });
+                cell.appendChild(hintIcon);
+                
+                if (cellData.done) {
+                    cell.classList.add('done');
+                }
+
+                cell.addEventListener('click', () => openTaskModal(index));
+                cell.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openTaskModal(index);
+                    }
+                });
+                grid.appendChild(cell);
+            });
+            updateUI();
+        };
+
+        const updateUI = () => {
+            // Progress Bar
+            const doneCount = state.board.filter(c => c.done).length;
+            const progressText = document.getElementById('progress-text');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+            progressText.textContent = `Progress: ${doneCount}/25`;
+            progressBarFill.style.width = `${(doneCount / 25) * 100}%`;
+            progressBarFill.textContent = `${Math.round((doneCount / 25) * 100)}%`;
+
+            // Buttons
+            shuffleBtn.textContent = `Shuffle Card (${state.shufflesLeft} left)`;
+            shuffleBtn.disabled = state.isFrozen || state.shufflesLeft <= 0;
+            freezeBtn.textContent = state.isFrozen ? 'Card Locked' : 'Lock Card';
+            freezeBtn.disabled = state.isFrozen;
+            claimBingoBtn.disabled = !state.hasBingo;
+            
+            // Check for bingo and update visuals
+            checkForBingo();
+        };
+        
+        // --- Event Handlers ---
+        shuffleBtn.addEventListener('click', () => {
+            if (state.isFrozen || state.shufflesLeft <= 0) return;
+            
+            // Directly shuffle without confirmation, as confirm() can be blocked in some environments.
+            state.shufflesLeft--;
+            generateNewBoard();
+            announcer.textContent = 'Card shuffled. A new board has been generated.';
+            saveState();
+            renderGrid();
+        });
+
+        freezeBtn.addEventListener('click', () => {
+            if (state.isFrozen) return;
+            // Directly lock without confirmation, as confirm() can be blocked.
+            state.isFrozen = true;
+            announcer.textContent = 'Card locked. Shuffling is now disabled.';
+            saveState();
+            updateUI();
+        });
+
+        claimBingoBtn.addEventListener('click', () => {
+            claimModal.style.display = 'flex';
+        });
+        
+        helpBtn.addEventListener('click', () => helpModal.style.display = 'flex');
+        exportBtn.addEventListener('click', () => exportModal.style.display = 'flex');
+        
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('high-contrast');
+            const isHighContrast = document.body.classList.contains('high-contrast');
+            themeToggle.setAttribute('aria-checked', isHighContrast);
+            announcer.textContent = `High contrast mode ${isHighContrast ? 'enabled' : 'disabled'}.`;
+        });
+        themeToggle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                themeToggle.click();
+            }
+        });
+
+        // --- Modal Logic ---
+        let currentCellIndex = null;
+        const modalTitle = document.getElementById('modal-title');
+        const modalProof = document.getElementById('modal-proof');
+        const modalNotes = document.getElementById('modal-notes');
+        const modalDoneCheckbox = document.getElementById('modal-done-checkbox');
+        const modalSaveBtn = document.getElementById('modal-save-btn');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        const openTaskModal = (index) => {
+            currentCellIndex = index;
+            const cellData = state.board[index];
+            modalTitle.textContent = cellData.title;
+            modalProof.textContent = cellData.proof;
+            modalNotes.value = cellData.notes || '';
+            modalDoneCheckbox.checked = cellData.done;
+            taskModal.style.display = 'flex';
+            modalNotes.focus();
+        };
+
+        const closeTaskModal = () => {
+            taskModal.style.display = 'none';
+            currentCellIndex = null;
+        };
+        
+        modalSaveBtn.addEventListener('click', () => {
+            if (currentCellIndex === null) return;
+            const cellData = state.board[currentCellIndex];
+            cellData.notes = modalNotes.value;
+            const wasDone = cellData.done;
+            cellData.done = modalDoneCheckbox.checked;
+
+            if (wasDone !== cellData.done) {
+                announcer.textContent = `Task "${cellData.title}" marked as ${cellData.done ? 'done' : 'not done'}.`;
+            }
+
+            saveState();
+            renderGrid();
+            closeTaskModal();
+        });
+        
+        modalCloseBtn.addEventListener('click', closeTaskModal);
+        
+        // --- Hint Modal Logic ---
+        const hintModalTitle = document.getElementById('hint-task-title');
+        const hintToolList = document.getElementById('hint-tool-list');
+
+        const openHintModal = (index) => {
+            const cellData = state.board[index];
+            hintModalTitle.textContent = cellData.title;
+            hintToolList.innerHTML = ''; // Clear previous list
+
+            if (cellData.tools && cellData.tools.length > 0) {
+                cellData.tools.forEach(tool => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = tool.url;
+                    a.textContent = tool.name;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    li.appendChild(a);
+                    if (tool.description) {
+                        const p = document.createElement('p');
+                        p.textContent = tool.description;
+                        p.style.fontSize = '0.8rem';
+                        p.style.fontStyle = 'normal';
+                        p.style.marginTop = '4px';
+                        li.appendChild(p);
+                    }
+                    hintToolList.appendChild(li);
+                });
+            } else {
+                hintToolList.innerHTML = '<li>No specific tools recommended. This may be a manual task.</li>';
+            }
+            hintModal.style.display = 'flex';
+        };
+        
+        // Close modals with Escape key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                taskModal.style.display = 'none';
+                claimModal.style.display = 'none';
+                helpModal.style.display = 'none';
+                exportModal.style.display = 'none';
+                hintModal.style.display = 'none';
+            }
+        });
+        
+        // Close modals by clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === taskModal) taskModal.style.display = 'none';
+            if (e.target === claimModal) claimModal.style.display = 'none';
+            if (e.target === helpModal) helpModal.style.display = 'none';
+            if (e.target === exportModal) exportModal.style.display = 'none';
+            if (e.target === hintModal) hintModal.style.display = 'none';
+        });
+        
+        // Other modal close buttons
+        document.getElementById('claim-modal-close-btn').addEventListener('click', () => claimModal.style.display = 'none');
+        document.getElementById('help-modal-close-btn').addEventListener('click', () => helpModal.style.display = 'none');
+        document.getElementById('export-modal-close-btn').addEventListener('click', () => exportModal.style.display = 'none');
+        document.getElementById('hint-modal-close-btn').addEventListener('click', () => hintModal.style.display = 'none');
+
+        // --- Bingo Logic ---
+        const checkForBingo = () => {
+            const winningCombos = [
+                // Rows
+                [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
+                // Columns
+                [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
+                // Diagonals
+                [0, 6, 12, 18, 24], [4, 8, 12, 16, 20]
+            ];
+
+            let bingoFound = false;
+            const cells = document.querySelectorAll('.bingo-cell');
+            cells.forEach(cell => cell.classList.remove('bingo-win')); // Clear previous wins
+
+            for (const combo of winningCombos) {
+                if (combo.every(index => state.board[index].done)) {
+                    bingoFound = true;
+                    combo.forEach(index => {
+                        const cell = grid.querySelector(`[data-index='${index}']`);
+                        if(cell) cell.classList.add('bingo-win');
+                    });
+                }
+            }
+
+            if (bingoFound && !state.hasBingo) {
+                announcer.textContent = 'BINGO! You have a winning line. The Claim Bingo button is now enabled.';
+            }
+
+            state.hasBingo = bingoFound;
+            claimBingoBtn.disabled = !state.hasBingo;
+        };
+
+        // --- Export/Import Logic ---
+        const exportJSON = () => {
+            const dataStr = JSON.stringify(state, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            const exportFileDefaultName = 'ai-bingo-save.json';
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        };
+
+        const importJSON = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    // Basic validation
+                    if (importedState.board && importedState.board.length === 25) {
+                        state = importedState;
+                        saveState();
+                        renderGrid();
+                        announcer.textContent = 'Save file successfully loaded.';
+                    } else {
+                        alert('Invalid save file format.');
+                    }
+                } catch (error) {
+                    alert('Error reading save file. Please ensure it is a valid JSON file.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        };
+        
+        const generateProof = async (format) => {
+            const nameInput = document.getElementById('claim-name');
+            const name = nameInput ? nameInput.value : 'Unnamed';
+            
+            if (format !== 'png' && !name) {
+                alert('Please enter your name or team name.');
+                return;
+            }
+
+            const gridContainer = document.getElementById('bingo-grid-container');
+            const originalBackgroundColor = gridContainer.style.backgroundColor;
+            gridContainer.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('--bg-dark'); // Use body bg for capture
+
+            try {
+                const canvas = await html2canvas(gridContainer, {
+                    scale: 2, // Higher resolution
+                    backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-dark'),
+                    useCORS: true
+                });
+
+                if (format === 'png') {
+                    const image = canvas.toDataURL('image/png', 1.0);
+                    const link = document.createElement('a');
+                    link.download = `bingo-proof-${name.replace(/\s+/g, '_')}.png`;
+                    link.href = image;
+                    link.click();
+                } else if (format === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({
+                        orientation: 'p',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+
+                    const timestamp = new Date().toLocaleString();
+                    doc.setFontSize(22);
+                    doc.text('AI Bingo Challenge - Proof of Submission', 10, 20);
+                    doc.setFontSize(12);
+                    doc.text(`Name/Team: ${name}`, 10, 30);
+                    doc.text(`Submission Time: ${timestamp}`, 10, 38);
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgProps = doc.getImageProperties(imgData);
+                    const pdfWidth = doc.internal.pageSize.getWidth() - 20;
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    doc.addImage(imgData, 'PNG', 10, 45, pdfWidth, pdfHeight);
+
+                    doc.addPage();
+                    doc.setFontSize(16);
+                    doc.text('Completed Task Notes', 10, 20);
+                    let yPos = 30;
+                    doc.setFontSize(10);
+
+                    state.board.forEach(cell => {
+                        if (cell.done && cell.notes.trim() !== '') {
+                            if (yPos > 270) { // Check for page break
+                                doc.addPage();
+                                yPos = 20;
+                            }
+                            doc.setFontSize(12).setFont(undefined, 'bold');
+                            doc.text(cell.title, 10, yPos);
+                            yPos += 6;
+                            doc.setFontSize(10).setFont(undefined, 'normal');
+                            const splitNotes = doc.splitTextToSize(cell.notes, 180);
+                            doc.text(splitNotes, 10, yPos);
+                            yPos += (splitNotes.length * 5) + 5;
+                        }
+                    });
+
+                    doc.save(`bingo-proof-${name.replace(/\s+/g, '_')}.pdf`);
+                }
+            } catch (error) {
+                console.error('Error generating proof:', error);
+                alert('An error occurred while generating the proof file.');
+            } finally {
+                gridContainer.style.backgroundColor = originalBackgroundColor;
+            }
+        };
+
+        document.getElementById('export-json-btn').addEventListener('click', exportJSON);
+        document.getElementById('import-json-btn').addEventListener('click', () => document.getElementById('json-file-input').click());
+        document.getElementById('json-file-input').addEventListener('change', importJSON);
+        document.getElementById('export-png-btn').addEventListener('click', () => generateProof('png'));
+        document.getElementById('export-pdf-btn').addEventListener('click', () => generateProof('pdf'));
+        document.getElementById('generate-proof-btn').addEventListener('click', () => generateProof('pdf'));
+
+        // --- Initialization ---
+        const init = () => {
+            if (!loadState()) {
+                generateNewBoard();
+                saveState();
+            }
+            renderGrid();
+        };
+
+        init();
+    });
+    </script>
+</body>
+</html>
